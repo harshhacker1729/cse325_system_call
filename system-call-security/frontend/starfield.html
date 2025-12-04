@@ -2,11 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calming Starfield</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+    <meta-name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Starfield Background</title>
+
     <style>
         * {
             margin: 0;
@@ -15,107 +13,48 @@
         }
 
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: Arial, sans-serif;
             background: #000;
-            color: #fff;
-            overflow: hidden;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
+            color: white;
+            min-height: 200vh; /* just to show scrolling */
         }
 
-        #canvas {
-            display: block;
-            background: radial-gradient(ellipse at center, #0f0f23 0%, #000000 100%);
-        }
-
-        .controls {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            background: rgba(0, 0, 0, 0.5);
-            padding: 15px;
-            border-radius: 10px;
-            backdrop-filter: blur(10px);
-            z-index: 10;
-        }
-
-        .controls label {
-            display: block;
-            margin-bottom: 10px;
-            font-size: 14px;
-        }
-
-        .controls input {
+        /* ⭐ Background Canvas Layer */
+        #star-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100%;
-            margin-bottom: 15px;
+            height: 100%;
+            z-index: -1;      /* Behind everything */
+            pointer-events: none; /* So user can click through it */
+            display: block;
+            background: radial-gradient(ellipse at center, #0f0f23 0%, #000 100%);
         }
 
-        .title {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            z-index: 5;
-            pointer-events: none;
-        }
-
-        .title h1 {
-            font-size: 3rem;
-            font-weight: 300;
-            opacity: 0.8;
-            margin-bottom: 10px;
-        }
-
-        .title p {
-            font-size: 1.2rem;
-            opacity: 0.6;
-        }
-
-        @media (max-width: 768px) {
-            .controls {
-                top: 10px;
-                left: 10px;
-                padding: 10px;
-            }
-
-            .title h1 {
-                font-size: 2rem;
-            }
-
-            .title p {
-                font-size: 1rem;
-            }
+        /* Example content */
+        .content {
+            padding: 50px;
+            z-index: 10;
+            position: relative;
         }
     </style>
 </head>
+
 <body>
-    <div class="controls">
-        <label for="density">Star Density: <span id="density-value">100</span></label>
-        <input type="range" id="density" min="50" max="500" value="100" step="10">
-        <label for="speed">Animation Speed: <span id="speed-value">1</span></label>
-        <input type="range" id="speed" min="0.1" max="3" value="1" step="0.1">
-    </div>
 
-    <div class="title">
-        <h1>Calming Starfield</h1>
-        <p>Move your mouse to interact</p>
-    </div>
+    <!-- ⭐ BACKGROUND CANVAS -->
+    <canvas id="star-canvas"></canvas>
 
-    <canvas id="canvas"></canvas>
+
+   
 
     <script>
-        const canvas = document.getElementById('canvas');
+        const canvas = document.getElementById('star-canvas');
         const ctx = canvas.getContext('2d');
-        const densitySlider = document.getElementById('density');
-        const speedSlider = document.getElementById('speed');
-        const densityValue = document.getElementById('density-value');
-        const speedValue = document.getElementById('speed-value');
 
         let stars = [];
         let mouse = { x: 0, y: 0 };
-        let animationId;
 
         function resizeCanvas() {
             canvas.width = window.innerWidth;
@@ -125,7 +64,8 @@
 
         function initStars() {
             stars = [];
-            const numStars = parseInt(densitySlider.value);
+            let numStars = 150;
+
             for (let i = 0; i < numStars; i++) {
                 stars.push({
                     x: Math.random() * canvas.width,
@@ -135,39 +75,31 @@
                     size: Math.random() * 2 + 0.5,
                     brightness: Math.random(),
                     twinkleSpeed: Math.random() * 0.02 + 0.01,
-                    layer: Math.floor(Math.random() * 3) // 0, 1, 2 for parallax
+                    layer: Math.floor(Math.random() * 3)
                 });
             }
         }
 
         function updateStars() {
-            const speed = parseFloat(speedSlider.value);
             stars.forEach(star => {
-                // Mouse interaction - parallax effect
                 const dx = mouse.x - star.x;
                 const dy = mouse.y - star.y;
                 const distance = Math.sqrt(dx * dx + dy * dy);
-                const maxDistance = 200;
-                const influence = Math.max(0, 1 - distance / maxDistance);
+                const influence = Math.max(0, 1 - distance / 200);
 
-                // Different layers move at different speeds
                 const layerSpeed = [0.3, 0.6, 1][star.layer];
+                const speed = 1;
+
                 star.x += star.vx * speed * layerSpeed + dx * influence * 0.01 * layerSpeed;
                 star.y += star.vy * speed * layerSpeed + dy * influence * 0.01 * layerSpeed;
 
-                // Wrap around edges
                 if (star.x < 0) star.x = canvas.width;
                 if (star.x > canvas.width) star.x = 0;
                 if (star.y < 0) star.y = canvas.height;
                 if (star.y > canvas.height) star.y = 0;
 
-                // Twinkle effect
                 star.brightness += star.twinkleSpeed;
-                if (star.brightness > 1) {
-                    star.brightness = 1;
-                    star.twinkleSpeed = -star.twinkleSpeed;
-                } else if (star.brightness < 0.3) {
-                    star.brightness = 0.3;
+                if (star.brightness > 1 || star.brightness < 0.3) {
                     star.twinkleSpeed = -star.twinkleSpeed;
                 }
             });
@@ -179,7 +111,7 @@
             stars.forEach(star => {
                 ctx.save();
                 ctx.globalAlpha = star.brightness;
-                ctx.fillStyle = '#fff';
+                ctx.fillStyle = "#fff";
                 ctx.beginPath();
                 ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
                 ctx.fill();
@@ -190,32 +122,18 @@
         function animate() {
             updateStars();
             drawStars();
-            animationId = requestAnimationFrame(animate);
+            requestAnimationFrame(animate);
         }
 
-        function handleMouseMove(e) {
+        window.addEventListener("resize", resizeCanvas);
+        window.addEventListener("mousemove", (e) => {
             mouse.x = e.clientX;
             mouse.y = e.clientY;
-        }
+        });
 
-        function handleDensityChange() {
-            densityValue.textContent = densitySlider.value;
-            initStars();
-        }
-
-        function handleSpeedChange() {
-            speedValue.textContent = speedSlider.value;
-        }
-
-        // Event listeners
-        window.addEventListener('resize', resizeCanvas);
-        window.addEventListener('mousemove', handleMouseMove);
-        densitySlider.addEventListener('input', handleDensityChange);
-        speedSlider.addEventListener('input', handleSpeedChange);
-
-        // Initialize
         resizeCanvas();
         animate();
     </script>
+
 </body>
 </html>

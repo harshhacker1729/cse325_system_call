@@ -6,6 +6,7 @@
     <link rel="stylesheet" href="style.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   </head>
+
   <body>
     <header class="navbar">
       <div class="nav-brand">Secure System Call Interface</div>
@@ -27,8 +28,7 @@
           </div>
         </div>
         <p class="text-muted">
-          Select a kernel system call to execute. The security monitor will
-          evaluate your permissions in real-time.
+          Select a kernel system call to execute. The AI Monitor will analyze behavior patterns in real-time.
         </p>
 
         <form id="syscall-form" class="mt-3">
@@ -58,9 +58,27 @@
 
         <div id="syscall-result" class="mt-3" style="display:none;"></div>
         
-        <div id="simulation-box" class="mt-3" style="display:none; padding: 15px; border-radius: 8px; background: rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.1);">
-            <h4 style="margin-bottom:8px; font-size:0.9rem; text-transform:uppercase; color: #64748b;">Kernel Simulation</h4>
-            <div id="simulation-output" style="font-family: monospace; color: #0f172a;"></div>
+        <div id="ai-card" class="mt-3" style="display:none; padding: 20px; border-radius: 12px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(99, 102, 241, 0.3);">
+            <div class="flex-between">
+                <h4 style="color: #a5b4fc; margin:0;"><i class="fas fa-robot"></i> AI Threat Analysis</h4>
+                <span id="ai-risk-badge" class="badge warning" style="font-size: 0.8rem;">Calculating...</span>
+            </div>
+            
+            <div style="margin: 15px 0;">
+                <label style="font-size: 0.8rem; color: #cbd5e1; margin-bottom: 5px;">Threat Probability Score</label>
+                <div style="width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;">
+                    <div id="ai-risk-bar" style="width: 0%; height: 100%; background: #6366f1; transition: width 1s ease;"></div>
+                </div>
+            </div>
+
+            <p id="ai-analysis-text" style="font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; color: #e2e8f0; line-height: 1.5; border-left: 3px solid #6366f1; padding-left: 10px; margin-top: 10px;">
+                Waiting for input...
+            </p>
+        </div>
+
+        <div id="simulation-box" class="mt-3" style="display:none; padding: 15px; border-radius: 8px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1);">
+            <h4 style="margin-bottom:8px; font-size:0.9rem; text-transform:uppercase; color: #94a3b8;">Kernel Simulation</h4>
+            <div id="simulation-output" style="font-family: monospace; color: #e2e8f0;"></div>
         </div>
       </section>
 
@@ -76,10 +94,6 @@
             </button>
           </div>
         </div>
-        <p class="text-muted mb-2">
-          Real-time log of all access attempts against the kernel security policy.
-        </p>
-
         <div class="table-wrapper">
           <table>
             <thead>
@@ -89,8 +103,7 @@
                 <th>Role</th>
                 <th>Call</th>
                 <th>Status</th>
-                <th>Details</th>
-              </tr>
+                <th>AI Risk</th> </tr>
             </thead>
             <tbody id="logs-body">
               </tbody>
@@ -100,5 +113,137 @@
     </main>
 
     <script src="app.js"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #000;
+            color: white;
+            min-height: 200vh; /* just to show scrolling */
+        }
+
+        /* ⭐ Background Canvas Layer */
+        #star-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;      /* Behind everything */
+            pointer-events: none; /* So user can click through it */
+            display: block;
+            background: radial-gradient(ellipse at center, #0f0f23 0%, #000 100%);
+        }
+
+        /* Example content */
+        .content {
+            padding: 50px;
+            z-index: 10;
+            position: relative;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ⭐ BACKGROUND CANVAS -->
+    <canvas id="star-canvas"></canvas>
+
+
+   
+
+    <script>
+        const canvas = document.getElementById('star-canvas');
+        const ctx = canvas.getContext('2d');
+
+        let stars = [];
+        let mouse = { x: 0, y: 0 };
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            initStars();
+        }
+
+        function initStars() {
+            stars = [];
+            let numStars = 150;
+
+            for (let i = 0; i < numStars; i++) {
+                stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    vx: (Math.random() - 0.5) * 0.5,
+                    vy: (Math.random() - 0.5) * 0.5,
+                    size: Math.random() * 2 + 0.5,
+                    brightness: Math.random(),
+                    twinkleSpeed: Math.random() * 0.02 + 0.01,
+                    layer: Math.floor(Math.random() * 3)
+                });
+            }
+        }
+
+        function updateStars() {
+            stars.forEach(star => {
+                const dx = mouse.x - star.x;
+                const dy = mouse.y - star.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                const influence = Math.max(0, 1 - distance / 200);
+
+                const layerSpeed = [0.3, 0.6, 1][star.layer];
+                const speed = 1;
+
+                star.x += star.vx * speed * layerSpeed + dx * influence * 0.01 * layerSpeed;
+                star.y += star.vy * speed * layerSpeed + dy * influence * 0.01 * layerSpeed;
+
+                if (star.x < 0) star.x = canvas.width;
+                if (star.x > canvas.width) star.x = 0;
+                if (star.y < 0) star.y = canvas.height;
+                if (star.y > canvas.height) star.y = 0;
+
+                star.brightness += star.twinkleSpeed;
+                if (star.brightness > 1 || star.brightness < 0.3) {
+                    star.twinkleSpeed = -star.twinkleSpeed;
+                }
+            });
+        }
+
+        function drawStars() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            stars.forEach(star => {
+                ctx.save();
+                ctx.globalAlpha = star.brightness;
+                ctx.fillStyle = "#fff";
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            });
+        }
+
+        function animate() {
+            updateStars();
+            drawStars();
+            requestAnimationFrame(animate);
+        }
+
+        window.addEventListener("resize", resizeCanvas);
+        window.addEventListener("mousemove", (e) => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+        });
+
+        resizeCanvas();
+        animate();
+    </script>
+
+   
   </body>
 </html>

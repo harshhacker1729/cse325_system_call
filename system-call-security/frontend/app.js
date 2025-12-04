@@ -86,15 +86,17 @@ async function submitSyscall(event) {
   const resultDiv = document.getElementById("syscall-result");
   const simBox = document.getElementById("simulation-box");
   const simOut = document.getElementById("simulation-output");
+  const aiCard = document.getElementById("ai-card"); // NEW
 
   // 1. Show "Processing" state immediately
   resultDiv.style.display = 'block';
   simBox.style.display = 'none';
+  aiCard.style.display = 'none';
   
   resultDiv.innerHTML = `
     <div style="text-align:center; padding: 20px;">
-      <i class="fas fa-cog fa-spin" style="font-size: 2rem; color: var(--primary);"></i>
-      <p class="text-muted mt-3">Kernel is executing <b>${syscall}()</b>...</p>
+      <i class="fas fa-microchip fa-spin" style="font-size: 2rem; color: var(--primary);"></i>
+      <p class="text-muted mt-3">AI Neural Engine is analyzing <b>${syscall}()</b> request...</p>
     </div>
   `;
 
@@ -120,7 +122,6 @@ async function submitSyscall(event) {
       return;
     }
 
-    // Prepare badge styles
     const badgeClass =
       data.status === "allowed"
         ? "badge allowed"
@@ -147,14 +148,41 @@ async function submitSyscall(event) {
       </div>
     `;
 
-    // 4. Show Simulation Message if Allowed
+    // 4. Update AI Card (NEW)
+    if (data.aiResult) {
+        aiCard.style.display = 'block';
+        const risk = data.aiResult.riskScore;
+        const bar = document.getElementById("ai-risk-bar");
+        const badge = document.getElementById("ai-risk-badge");
+        const text = document.getElementById("ai-analysis-text");
+
+        // Color logic for risk bar
+        let color = "#22c55e"; // Green
+        let riskLabel = "LOW RISK";
+        if(risk > 40) { color = "#fbbf24"; riskLabel = "MODERATE RISK"; } // Yellow
+        if(risk > 75) { color = "#ef4444"; riskLabel = "HIGH RISK"; } // Red
+
+        badge.textContent = `${riskLabel} (${risk}%)`;
+        badge.className = risk > 75 ? "badge blocked" : (risk > 40 ? "badge warning" : "badge allowed");
+        
+        // Animate Bar
+        setTimeout(() => {
+            bar.style.width = `${risk}%`;
+            bar.style.backgroundColor = color;
+        }, 100);
+
+        // Typewriter effect for text
+        text.innerHTML = `<b>AI Analysis:</b> ${data.aiResult.details}`;
+    }
+
+    // 5. Show Simulation Message if Allowed
     if (data.status === "allowed") {
         simBox.style.display = 'block';
         const simMsg = simulationMessages[syscall] || "Operation executed successfully.";
         simOut.innerHTML = simMsg;
     }
 
-    // 5. Update Logs
+    // 6. Update Logs
     await loadLogs();
 
   } catch (err) {
@@ -186,23 +214,33 @@ async function loadLogs() {
         const tr = document.createElement("tr");
         
         if(entry.status === 'blocked') {
-            tr.style.backgroundColor = "rgba(254, 226, 226, 0.3)";
+            tr.style.backgroundColor = "rgba(254, 226, 226, 0.1)"; // Very subtle red tint
         }
 
         const dateObj = new Date(entry.timestamp);
         const timeStr = dateObj.toLocaleString(); 
+        
+        // Show risk score in logs if available
+        let riskDisplay = "-";
+        if(entry.aiResult && entry.aiResult.riskScore) {
+            const r = entry.aiResult.riskScore;
+            let color = "green";
+            if(r > 40) color = "orange";
+            if(r > 75) color = "red";
+            riskDisplay = `<span style="color:${color}; font-weight:bold;">${r}%</span>`;
+        }
 
         tr.innerHTML = `
           <td style="font-size:0.8rem; white-space:nowrap;">${timeStr}</td>
           <td><b>${entry.username}</b></td>
-          <td><span class="badge" style="font-size:0.7rem; padding: 2px 8px; background: rgba(0,0,0,0.05); color: #555;">${entry.role}</span></td>
+          <td><span class="badge" style="font-size:0.7rem; padding: 2px 8px; background: rgba(0,0,0,0.05); color: #94a3b8;">${entry.role}</span></td>
           <td style="font-family: var(--font-mono); color: var(--primary);">${entry.syscall}()</td>
           <td>
             <span class="badge ${entry.status === 'allowed' ? 'allowed' : 'blocked'}">
               ${entry.status}
             </span>
           </td>
-          <td class="text-muted" style="font-size:0.85rem">${entry.reason}</td>
+          <td class="text-muted" style="font-size:0.85rem">${riskDisplay}</td>
         `;
         tbody.appendChild(tr);
       });

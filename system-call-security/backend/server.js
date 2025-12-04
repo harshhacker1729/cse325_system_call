@@ -1,4 +1,4 @@
-const express = require("express");
+=const express = require("express");
 const cors = require("cors");
 const fs = require("fs");
 const path = require("path");
@@ -36,6 +36,41 @@ const syscallPolicies = {
   exit: { roles: ["admin", "user"] }
 };
 
+// ----- 🧠 AI Simulation Logic -----
+function generateAIAnalysis(syscall, role, status) {
+  // 1. Calculate Fake Risk Score (0-100)
+  let baseRisk = 10;
+  if (syscall === 'exec' || syscall === 'write') baseRisk += 50;
+  if (syscall === 'fork') baseRisk += 30;
+  if (role !== 'admin') baseRisk += 20;
+  
+  // Add some randomness to make it look "alive"
+  const riskScore = Math.min(Math.floor(baseRisk + Math.random() * 15), 99);
+
+  // 2. Generate "Smart" Analysis Text
+  const analysisTemplates = [
+    `Analyzing behavioral patterns for user role '${role}'...`,
+    `Cross-referencing syscall '${syscall}' against known threat signatures...`,
+    `Heuristic scan indicates a ${riskScore}% probability of anomalous intent.`,
+    `Access control matrix verification: ${status.toUpperCase()}.`,
+  ];
+
+  let detailedReason = "";
+  if (status === "blocked") {
+    detailedReason = `CRITICAL: Unauthorized privilege escalation attempt detected. '${syscall}' requires higher clearance levels. AI recommends immediate session termination.`;
+  } else if (riskScore > 60) {
+    detailedReason = `WARNING: High-risk operation '${syscall}' detected. Pattern matches potential buffer overflow preparation. Monitoring memory heap closely.`;
+  } else {
+    detailedReason = `SAFE: Standard operation sequence detected. '${syscall}' aligns with normal user behavior profiles. No threat detected.`;
+  }
+
+  return {
+    riskScore,
+    analysis: analysisTemplates[Math.floor(Math.random() * analysisTemplates.length)],
+    details: detailedReason
+  };
+}
+
 function evaluateSyscall({ username, role, syscall }) {
   let status = "allowed";
   let reason = "Allowed by policy";
@@ -48,7 +83,10 @@ function evaluateSyscall({ username, role, syscall }) {
     reason = `Role '${role}' is not permitted to execute '${syscall}'`;
   }
 
-  return { status, reason };
+  // Generate AI Analysis
+  const aiResult = generateAIAnalysis(syscall, role, status);
+
+  return { status, reason, aiResult };
 }
 
 function logEvent(entry) {
@@ -93,7 +131,7 @@ app.post("/api/syscall", (req, res) => {
       .json({ success: false, message: "username, role and syscall required" });
   }
 
-  const { status, reason } = evaluateSyscall({ username, role, syscall });
+  const { status, reason, aiResult } = evaluateSyscall({ username, role, syscall });
 
   const logEntry = {
     timestamp: new Date().toISOString(),
@@ -101,7 +139,8 @@ app.post("/api/syscall", (req, res) => {
     role,
     syscall,
     status,
-    reason
+    reason,
+    aiResult // Log the AI data too
   };
 
   logEvent(logEntry);
@@ -137,10 +176,10 @@ app.get("/api/logs", (req, res) => {
   return res.json(entries);
 });
 
-// NEW: Clear logs
+// Clear logs
 app.post("/api/logs/clear", (req, res) => {
   try {
-    fs.writeFileSync(logFile, "POST /api/logs/clear"); // Wipe file content
+    fs.writeFileSync(logFile, ""); 
     res.json({ success: true, message: "Logs cleared successfully." });
   } catch (err) {
     console.error(err);
