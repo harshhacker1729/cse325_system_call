@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Dashboard – Secure System Call Interface</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="navbar">
+      <div class="nav-brand">Secure System Call Interface</div>
+      <nav class="nav-links">
+        <a href="index.html">Home</a>
+        <a href="login.html">Login</a>
+        <a href="dashboard.html" class="active">Dashboard</a>
+      </nav>
+    </header>
+
+    <main class="container">
+      <section class="card">
+        <div class="flex-between mb-2">
+          <h2>System Call Dashboard</h2>
+          <div>
+            <span id="current-user" class="text-muted"></span>
+            &nbsp;•&nbsp;
+            <a href="#" id="logout-link" class="text-muted">Logout</a>
+          </div>
+        </div>
+        <p class="text-muted">
+          Submit a simulated system call request. The backend will evaluate it
+          based on the security policy and log the attempt.
+        </p>
+
+        <form id="syscall-form" class="mt-3">
+          <div class="form-group">
+            <label for="syscall-select">Select System Call</label>
+            <select id="syscall-select" required>
+              <option value="">-- choose --</option>
+              <option value="read">read</option>
+              <option value="write">write</option>
+              <option value="open">open</option>
+              <option value="close">close</option>
+              <option value="stat">stat</option>
+              <option value="unknown">unknown (for demo)</option>
+            </select>
+          </div>
+          <button type="submit" class="btn-primary btn-small">
+            Execute System Call
+          </button>
+        </form>
+
+        <div id="syscall-result" class="mt-3"></div>
+      </section>
+
+      <section class="card">
+        <div class="flex-between mb-2">
+          <h2>System Call Logs</h2>
+          <button id="refresh-logs" class="btn-primary btn-small">
+            Refresh
+          </button>
+        </div>
+        <p class="text-muted mb-2">
+          Every request is logged with timestamp, user, system call, status and
+          reason.
+        </p>
+
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Timestamp</th>
+                <th>User</th>
+                <th>Role</th>
+                <th>System Call</th>
+                <th>Status</th>
+                <th>Reason</th>
+              </tr>
+            </thead>
+            <tbody id="logs-body">
+              <!-- filled by JS -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>

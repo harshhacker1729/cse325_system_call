@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Secure System Call Interface – Home</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="navbar">
+      <div class="nav-brand">Secure System Call Interface</div>
+      <nav class="nav-links">
+        <a href="index.html" class="active">Home</a>
+        <a href="login.html">Login</a>
+        <a href="dashboard.html">Dashboard</a>
+      </nav>
+    </header>
+
+    <main class="container">
+      <section class="card">
+        <h1 class="hero-title">User-Friendly System Call Interface</h1>
+        <p class="hero-subtitle">
+          This project simulates a secure interface for operating system
+          system calls. It adds authentication, role-based access control and
+          detailed logging to every system call request.
+        </p>
+        <button
+          class="btn-primary"
+          onclick="window.location.href='login.html'"
+        >
+          Get Started – Login
+        </button>
+      </section>
+
+      <section class="card">
+        <h2>What is a System Call?</h2>
+        <p class="text-muted mb-3">
+          A system call is a controlled entry point where user programs request
+          services from the operating system kernel, such as file I/O or
+          process management. Securing system calls is critical to prevent
+          unauthorized access and to preserve system integrity.
+        </p>
+
+        <div class="feature-grid">
+          <div class="card feature-card">
+            <h3>Secure Authentication</h3>
+            <p>
+              Only authenticated users can request system calls. Different
+              roles have different privileges.
+            </p>
+          </div>
+          <div class="card feature-card">
+            <h3>Policy-Based Control</h3>
+            <p>
+              Each system call is checked against a security policy to decide
+              if it should be allowed or blocked.
+            </p>
+          </div>
+          <div class="card feature-card">
+            <h3>Detailed Logging</h3>
+            <p>
+              Every attempt is logged with user, role, call name, timestamp,
+              status and reason.
+            </p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,15 @@
+{"timestamp":"2025-11-26T15:44:20.043Z","username":"user","role":"user","syscall":"read","status":"allowed","reason":"Allowed by policy"}
+{"timestamp":"2025-11-26T15:44:23.809Z","username":"user","role":"user","syscall":"open","status":"allowed","reason":"Allowed by policy"}
+{"timestamp":"2025-11-26T15:44:28.227Z","username":"user","role":"user","syscall":"unknown","status":"blocked","reason":"Unknown or potentially dangerous system call"}
+{"timestamp":"2025-11-26T15:44:41.643Z","username":"user","role":"user","syscall":"stat","status":"blocked","reason":"Role 'user' is not permitted to execute 'stat'"}
+{"timestamp":"2025-11-27T06:24:06.969Z","username":"user","role":"user","syscall":"read","status":"allowed","reason":"Allowed by policy"}
+{"timestamp":"2025-11-27T06:24:11.167Z","username":"user","role":"user","syscall":"open","status":"allowed","reason":"Allowed by policy"}
+{"timestamp":"2025-11-27T06:24:15.334Z","username":"user","role":"user","syscall":"unknown","status":"blocked","reason":"Unknown or potentially dangerous system call"}
+{"timestamp":"2025-11-27T10:46:37.385Z","username":"admin","role":"admin","syscall":"open","status":"allowed","reason":"Allowed by policy"}
+{"timestamp":"2025-11-27T10:46:42.851Z","username":"admin","role":"admin","syscall":"unknown","status":"blocked","reason":"Unknown or potentially dangerous system call"}
+{"timestamp":"2025-12-01T07:34:09.112Z","username":"user","role":"user","syscall":"open","status":"allowed","reason":"Allowed by policy"}
+{"timestamp":"2025-12-01T07:36:33.978Z","username":"user","role":"user","syscall":"read","status":"allowed","reason":"Allowed by policy"}
+{"timestamp":"2025-12-01T07:36:52.226Z","username":"user","role":"user","syscall":"close","status":"allowed","reason":"Allowed by policy"}
+{"timestamp":"2025-12-03T06:28:36.628Z","username":"user","role":"user","syscall":"read","status":"allowed","reason":"Allowed by policy"}
+{"timestamp":"2025-12-03T06:29:26.011Z","username":"user","role":"user","syscall":"write","status":"blocked","reason":"Role 'user' is not permitted to execute 'write'"}
+{"timestamp":"2025-12-04T08:23:35.195Z","username":"user","role":"user","syscall":"read","status":"allowed","reason":"Allowed by policy"}
