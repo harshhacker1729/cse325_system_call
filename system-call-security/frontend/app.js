@@ -19,6 +19,19 @@ function clearUser() {
   localStorage.removeItem("scs_user");
 }
 
+// ---- Fun Simulation Messages ----
+const simulationMessages = {
+  fork: "🍴 <b>Process Forked!</b><br>Parent PID: 1024 -> Child PID: 4592 created.<br>Memory pages duplicated.",
+  exec: "🚀 <b>Executing Binary...</b><br>Loading <code>/bin/custom_script</code> into memory.<br>Replaced process image.",
+  wait: "⏳ <b>Waiting...</b><br>Parent process paused.<br>Received signal SIGCHLD from child process.",
+  exit: "🚪 <b>Process Terminated</b><br>Process 4592 exited with status code 0.<br>Resources freed.",
+  read: "📖 <b>Reading Data</b><br>Read 4096 bytes from file descriptor [3].<br>Buffer populated.",
+  write: "✍️ <b>Writing Data</b><br>Flushed buffer to disk.<br>128 bytes written to <code>/var/log/sys.log</code>.",
+  open: "📂 <b>Opening File</b><br>File <code>secret_data.txt</code> opened.<br>Assigned File Descriptor [3].",
+  close: "🚫 <b>Closing File</b><br>File Descriptor [3] released.<br>File handle detached.",
+  stat: "📊 <b>File Status</b><br>Inode: 83721<br>Size: 2KB<br>Permissions: -rw-r--r--"
+};
+
 // ---- Login page logic ----
 async function handleLoginSubmit(event) {
   event.preventDefault();
@@ -71,7 +84,22 @@ async function submitSyscall(event) {
   if (!syscall) return;
 
   const resultDiv = document.getElementById("syscall-result");
-  resultDiv.innerHTML = "<p class='text-muted'>Processing...</p>";
+  const simBox = document.getElementById("simulation-box");
+  const simOut = document.getElementById("simulation-output");
+
+  // 1. Show "Processing" state immediately
+  resultDiv.style.display = 'block';
+  simBox.style.display = 'none';
+  
+  resultDiv.innerHTML = `
+    <div style="text-align:center; padding: 20px;">
+      <i class="fas fa-cog fa-spin" style="font-size: 2rem; color: var(--primary);"></i>
+      <p class="text-muted mt-3">Kernel is executing <b>${syscall}()</b>...</p>
+    </div>
+  `;
+
+  // 2. Add the 3-second delay (HOLD)
+  await new Promise(resolve => setTimeout(resolve, 3000));
 
   try {
     const res = await fetch(`${API_BASE}/syscall`, {
@@ -85,11 +113,14 @@ async function submitSyscall(event) {
     });
 
     const data = await res.json();
+    
+    // Check if error
     if (!data.success) {
       resultDiv.innerHTML = `<p class="text-muted">${data.message}</p>`;
       return;
     }
 
+    // Prepare badge styles
     const badgeClass =
       data.status === "allowed"
         ? "badge allowed"
@@ -104,18 +135,28 @@ async function submitSyscall(event) {
         ? "⛔"
         : "⚠️";
 
+    // 3. Show Final Result
     resultDiv.innerHTML = `
       <div class="mt-3">
         <div class="${badgeClass}">
           <span class="icon">${icon}</span>
           <span>${data.status.toUpperCase()}</span>
         </div>
-        <p class="text-muted mb-2">Reason: ${data.reason}</p>
-        <p class="text-muted">Logged at: ${data.timestamp}</p>
+        <p class="text-muted mb-2">Policy Check: <b>${data.reason}</b></p>
+        <p class="text-muted" style="font-size:0.8rem">Timestamp: ${new Date(data.timestamp).toLocaleString()}</p>
       </div>
     `;
 
+    // 4. Show Simulation Message if Allowed
+    if (data.status === "allowed") {
+        simBox.style.display = 'block';
+        const simMsg = simulationMessages[syscall] || "Operation executed successfully.";
+        simOut.innerHTML = simMsg;
+    }
+
+    // 5. Update Logs
     await loadLogs();
+
   } catch (err) {
     console.error(err);
     resultDiv.innerHTML = `<p class="text-muted">Error connecting to server.</p>`;
@@ -126,36 +167,50 @@ async function loadLogs() {
   const tbody = document.getElementById("logs-body");
   if (!tbody) return;
 
-  tbody.innerHTML = `<tr><td colspan="6">Loading...</td></tr>`;
-
   try {
     const res = await fetch(`${API_BASE}/logs`);
     const logs = await res.json();
 
     if (!Array.isArray(logs) || logs.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="6">No logs yet.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="6" class="text-center">No logs recorded yet.</td></tr>`;
       return;
     }
 
+    // Clear current rows only when we have the new data ready
     tbody.innerHTML = "";
+    
     logs
       .slice()
       .reverse()
       .forEach(entry => {
         const tr = document.createElement("tr");
+        
+        if(entry.status === 'blocked') {
+            tr.style.backgroundColor = "rgba(254, 226, 226, 0.3)";
+        }
+
+        const dateObj = new Date(entry.timestamp);
+        const timeStr = dateObj.toLocaleString(); 
+
         tr.innerHTML = `
-          <td>${entry.timestamp}</td>
-          <td>${entry.username}</td>
-          <td>${entry.role}</td>
-          <td>${entry.syscall}</td>
-          <td>${entry.status}</td>
-          <td>${entry.reason}</td>
+          <td style="font-size:0.8rem; white-space:nowrap;">${timeStr}</td>
+          <td><b>${entry.username}</b></td>
+          <td><span class="badge" style="font-size:0.7rem; padding: 2px 8px; background: rgba(0,0,0,0.05); color: #555;">${entry.role}</span></td>
+          <td style="font-family: var(--font-mono); color: var(--primary);">${entry.syscall}()</td>
+          <td>
+            <span class="badge ${entry.status === 'allowed' ? 'allowed' : 'blocked'}">
+              ${entry.status}
+            </span>
+          </td>
+          <td class="text-muted" style="font-size:0.85rem">${entry.reason}</td>
         `;
         tbody.appendChild(tr);
       });
   } catch (err) {
     console.error(err);
-    tbody.innerHTML = `<tr><td colspan="6">Failed to load logs.</td></tr>`;
+    if(tbody.innerHTML === "") {
+        tbody.innerHTML = `<tr><td colspan="6">Failed to load logs.</td></tr>`;
+    }
   }
 }
 
@@ -176,7 +231,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     const userSpan = document.getElementById("current-user");
-    userSpan.textContent = `${user.username} (${user.role})`;
+    userSpan.innerHTML = `Logged in as <b>${user.username}</b> <span class="badge" style="background:rgba(255,255,255,0.3); color:#333;">${user.role}</span>`;
 
     document
       .getElementById("logout-link")
@@ -187,9 +242,26 @@ document.addEventListener("DOMContentLoaded", () => {
       });
 
     syscallForm.addEventListener("submit", submitSyscall);
+    
+    // Refresh Logic
     document
       .getElementById("refresh-logs")
       .addEventListener("click", loadLogs);
+
+    // NEW: Clear Logic
+    document
+      .getElementById("clear-logs")
+      .addEventListener("click", async () => {
+        if(confirm("Are you sure you want to clear all system logs? This cannot be undone.")) {
+            try {
+                await fetch(`${API_BASE}/logs/clear`, { method: "POST" });
+                loadLogs();
+            } catch(e) {
+                alert("Failed to clear logs");
+            }
+        }
+      });
+
     loadLogs();
   }
 });

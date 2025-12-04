@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <title>Dashboard – Secure System Call Interface</title>
     <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   </head>
   <body>
     <header class="navbar">
@@ -18,7 +19,7 @@
     <main class="container">
       <section class="card">
         <div class="flex-between mb-2">
-          <h2>System Call Dashboard</h2>
+          <h2><i class="fas fa-terminal"></i> Command Center</h2>
           <div>
             <span id="current-user" class="text-muted"></span>
             &nbsp;•&nbsp;
@@ -26,58 +27,73 @@
           </div>
         </div>
         <p class="text-muted">
-          Submit a simulated system call request. The backend will evaluate it
-          based on the security policy and log the attempt.
+          Select a kernel system call to execute. The security monitor will
+          evaluate your permissions in real-time.
         </p>
 
         <form id="syscall-form" class="mt-3">
           <div class="form-group">
-            <label for="syscall-select">Select System Call</label>
+            <label for="syscall-select">System Call Request</label>
             <select id="syscall-select" required>
-              <option value="">-- choose --</option>
-              <option value="read">read</option>
-              <option value="write">write</option>
-              <option value="open">open</option>
-              <option value="close">close</option>
-              <option value="stat">stat</option>
-              <option value="unknown">unknown (for demo)</option>
+              <option value="">-- Select System Call --</option>
+              <optgroup label="Process Control">
+                <option value="fork">fork() - Create Process</option>
+                <option value="exec">exec() - Execute Program</option>
+                <option value="wait">wait() - Wait for Child</option>
+                <option value="exit">exit() - Terminate</option>
+              </optgroup>
+              <optgroup label="File Management">
+                <option value="read">read() - Read File</option>
+                <option value="write">write() - Write to File</option>
+                <option value="open">open() - Open File Handle</option>
+                <option value="close">close() - Close File Handle</option>
+                <option value="stat">stat() - Get File Status</option>
+              </optgroup>
             </select>
           </div>
           <button type="submit" class="btn-primary btn-small">
-            Execute System Call
+            <i class="fas fa-play"></i> Execute Syscall
           </button>
         </form>
 
-        <div id="syscall-result" class="mt-3"></div>
+        <div id="syscall-result" class="mt-3" style="display:none;"></div>
+        
+        <div id="simulation-box" class="mt-3" style="display:none; padding: 15px; border-radius: 8px; background: rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.1);">
+            <h4 style="margin-bottom:8px; font-size:0.9rem; text-transform:uppercase; color: #64748b;">Kernel Simulation</h4>
+            <div id="simulation-output" style="font-family: monospace; color: #0f172a;"></div>
+        </div>
       </section>
 
       <section class="card">
         <div class="flex-between mb-2">
-          <h2>System Call Logs</h2>
-          <button id="refresh-logs" class="btn-primary btn-small">
-            Refresh
-          </button>
+          <h2><i class="fas fa-list-alt"></i> Security Audit Logs</h2>
+          <div>
+            <button id="clear-logs" class="btn-danger btn-small" style="margin-right: 10px;">
+              <i class="fas fa-trash-alt"></i> Clear
+            </button>
+            <button id="refresh-logs" class="btn-primary btn-small">
+              <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+          </div>
         </div>
         <p class="text-muted mb-2">
-          Every request is logged with timestamp, user, system call, status and
-          reason.
+          Real-time log of all access attempts against the kernel security policy.
         </p>
 
         <div class="table-wrapper">
           <table>
             <thead>
               <tr>
-                <th>Timestamp</th>
+                <th>Time</th>
                 <th>User</th>
                 <th>Role</th>
-                <th>System Call</th>
+                <th>Call</th>
                 <th>Status</th>
-                <th>Reason</th>
+                <th>Details</th>
               </tr>
             </thead>
             <tbody id="logs-body">
-              <!-- filled by JS -->
-            </tbody>
+              </tbody>
           </table>
         </div>
       </section>

@@ -21,13 +21,19 @@ const logFile = path.join(logsDir, "syscalls.log");
 const users = require("./users.json");
 
 // ----- Security policy for system calls -----
-// Which roles can run which system calls
 const syscallPolicies = {
+  // File Management
   read: { roles: ["admin", "user"] },
+  write: { roles: ["admin"] },
   open: { roles: ["admin", "user"] },
   close: { roles: ["admin", "user"] },
-  write: { roles: ["admin"] },
-  stat: { roles: ["admin"] }
+  stat: { roles: ["admin"] },
+  
+  // Process Control
+  fork: { roles: ["admin", "user"] },
+  exec: { roles: ["admin"] },
+  wait: { roles: ["admin", "user"] },
+  exit: { roles: ["admin", "user"] }
 };
 
 function evaluateSyscall({ username, role, syscall }) {
@@ -56,10 +62,9 @@ function logEvent(entry) {
 
 // ----- Routes -----
 
-// Login (authentication simulation)
+// Login
 app.post("/api/login", (req, res) => {
   const { username, password } = req.body;
-
   const user = users.find(
     u => u.username === username && u.password === password
   );
@@ -130,6 +135,17 @@ app.get("/api/logs", (req, res) => {
     .filter(Boolean);
 
   return res.json(entries);
+});
+
+// NEW: Clear logs
+app.post("/api/logs/clear", (req, res) => {
+  try {
+    fs.writeFileSync(logFile, "POST /api/logs/clear"); // Wipe file content
+    res.json({ success: true, message: "Logs cleared successfully." });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Failed to clear logs." });
+  }
 });
 
 // ----- Start server -----

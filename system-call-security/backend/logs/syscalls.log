@@ -13,3 +13,11 @@
 {"timestamp":"2025-12-03T06:28:36.628Z","username":"user","role":"user","syscall":"read","status":"allowed","reason":"Allowed by policy"}
 {"timestamp":"2025-12-03T06:29:26.011Z","username":"user","role":"user","syscall":"write","status":"blocked","reason":"Role 'user' is not permitted to execute 'write'"}
 {"timestamp":"2025-12-04T08:23:35.195Z","username":"user","role":"user","syscall":"read","status":"allowed","reason":"Allowed by policy"}
+{"timestamp":"2025-12-04T12:21:36.677Z","username":"admin","role":"admin","syscall":"fork","status":"allowed","reason":"Allowed by policy"}
+{"timestamp":"2025-12-04T12:21:47.882Z","username":"admin","role":"admin","syscall":"exec","status":"allowed","reason":"Allowed by policy"}
+{"timestamp":"2025-12-04T12:26:51.000Z","username":"admin","role":"admin","syscall":"exec","status":"allowed","reason":"Allowed by policy"}
+{"timestamp":"2025-12-04T12:27:04.266Z","username":"admin","role":"admin","syscall":"exec","status":"allowed","reason":"Allowed by policy"}
+{"timestamp":"2025-12-04T12:27:35.648Z","username":"user","role":"user","syscall":"exec","status":"blocked","reason":"Role 'user' is not permitted to execute 'exec'"}
+{"timestamp":"2025-12-04T12:36:13.111Z","username":"admin","role":"admin","syscall":"exit","status":"allowed","reason":"Allowed by policy"}
+{"timestamp":"2025-12-04T12:37:19.846Z","username":"admin","role":"admin","syscall":"fork","status":"allowed","reason":"Allowed by policy"}
+{"timestamp":"2025-12-04T12:39:57.187Z","username":"admin","role":"admin","syscall":"exec","status":"allowed","reason":"Allowed by policy"}
