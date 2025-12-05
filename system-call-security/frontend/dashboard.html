@@ -1,249 +1,186 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Dashboard – Secure System Call Interface</title>
-    <link rel="stylesheet" href="style.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-  </head>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SysCall Explorer | Secure Dashboard</title>
 
-  <body>
-    <header class="navbar">
-      <div class="nav-brand">Secure System Call Interface</div>
-      <nav class="nav-links">
-        <a href="index.html">Home</a>
-        <a href="login.html">Login</a>
-        <a href="dashboard.html" class="active">Dashboard</a>
-      </nav>
-    </header>
-
-    <main class="container">
-      <section class="card">
-        <div class="flex-between mb-2">
-          <h2><i class="fas fa-terminal"></i> Command Center</h2>
-          <div>
-            <span id="current-user" class="text-muted"></span>
-            &nbsp;•&nbsp;
-            <a href="#" id="logout-link" class="text-muted">Logout</a>
-          </div>
-        </div>
-        <p class="text-muted">
-          Select a kernel system call to execute. The AI Monitor will analyze behavior patterns in real-time.
-        </p>
-
-        <form id="syscall-form" class="mt-3">
-          <div class="form-group">
-            <label for="syscall-select">System Call Request</label>
-            <select id="syscall-select" required>
-              <option value="">-- Select System Call --</option>
-              <optgroup label="Process Control">
-                <option value="fork">fork() - Create Process</option>
-                <option value="exec">exec() - Execute Program</option>
-                <option value="wait">wait() - Wait for Child</option>
-                <option value="exit">exit() - Terminate</option>
-              </optgroup>
-              <optgroup label="File Management">
-                <option value="read">read() - Read File</option>
-                <option value="write">write() - Write to File</option>
-                <option value="open">open() - Open File Handle</option>
-                <option value="close">close() - Close File Handle</option>
-                <option value="stat">stat() - Get File Status</option>
-              </optgroup>
-            </select>
-          </div>
-          <button type="submit" class="btn-primary btn-small">
-            <i class="fas fa-play"></i> Execute Syscall
-          </button>
-        </form>
-
-        <div id="syscall-result" class="mt-3" style="display:none;"></div>
-        
-        <div id="ai-card" class="mt-3" style="display:none; padding: 20px; border-radius: 12px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(99, 102, 241, 0.3);">
-            <div class="flex-between">
-                <h4 style="color: #a5b4fc; margin:0;"><i class="fas fa-robot"></i> AI Threat Analysis</h4>
-                <span id="ai-risk-badge" class="badge warning" style="font-size: 0.8rem;">Calculating...</span>
-            </div>
-            
-            <div style="margin: 15px 0;">
-                <label style="font-size: 0.8rem; color: #cbd5e1; margin-bottom: 5px;">Threat Probability Score</label>
-                <div style="width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;">
-                    <div id="ai-risk-bar" style="width: 0%; height: 100%; background: #6366f1; transition: width 1s ease;"></div>
-                </div>
-            </div>
-
-            <p id="ai-analysis-text" style="font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; color: #e2e8f0; line-height: 1.5; border-left: 3px solid #6366f1; padding-left: 10px; margin-top: 10px;">
-                Waiting for input...
-            </p>
-        </div>
-
-        <div id="simulation-box" class="mt-3" style="display:none; padding: 15px; border-radius: 8px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1);">
-            <h4 style="margin-bottom:8px; font-size:0.9rem; text-transform:uppercase; color: #94a3b8;">Kernel Simulation</h4>
-            <div id="simulation-output" style="font-family: monospace; color: #e2e8f0;"></div>
-        </div>
-      </section>
-
-      <section class="card">
-        <div class="flex-between mb-2">
-          <h2><i class="fas fa-list-alt"></i> Security Audit Logs</h2>
-          <div>
-            <button id="clear-logs" class="btn-danger btn-small" style="margin-right: 10px;">
-              <i class="fas fa-trash-alt"></i> Clear
-            </button>
-            <button id="refresh-logs" class="btn-primary btn-small">
-              <i class="fas fa-sync-alt"></i> Refresh
-            </button>
-          </div>
-        </div>
-        <div class="table-wrapper">
-          <table>
-            <thead>
-              <tr>
-                <th>Time</th>
-                <th>User</th>
-                <th>Role</th>
-                <th>Call</th>
-                <th>Status</th>
-                <th>AI Risk</th> </tr>
-            </thead>
-            <tbody id="logs-body">
-              </tbody>
-          </table>
-        </div>
-      </section>
-    </main>
-
-    <script src="app.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800&display=swap');
 
-        body {
-            font-family: Arial, sans-serif;
-            background: #000;
-            color: white;
-            min-height: 200vh; /* just to show scrolling */
-        }
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #e2e8f0; overflow-x: hidden; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
 
-        /* ⭐ Background Canvas Layer */
-        #star-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;      /* Behind everything */
-            pointer-events: none; /* So user can click through it */
-            display: block;
-            background: radial-gradient(ellipse at center, #0f0f23 0%, #000 100%);
-        }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 4px; }
 
-        /* Example content */
-        .content {
-            padding: 50px;
-            z-index: 10;
-            position: relative;
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
         }
     </style>
 </head>
 
-<body>
+<body class="antialiased">
 
-    <!-- ⭐ BACKGROUND CANVAS -->
-    <canvas id="star-canvas"></canvas>
+<!-- NAVBAR -->
+<nav class="fixed w-full z-50 glass-panel border-b border-white/10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-16">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-shield-halved text-blue-500 text-xl"></i>
+                <span class="font-bold text-xl tracking-tight">SysCall<span class="text-blue-500">Secure</span></span>
+            </div>
 
+            <div class="flex items-center gap-6">
+                <div id="user-display" class="hidden md:flex items-center gap-2 px-3 py-1 rounded bg-slate-800/50 border border-slate-700">
+                    <i class="fa-regular fa-circle-user text-green-400"></i>
+                    <span id="username-span" class="text-sm font-mono text-slate-300">Loading...</span>
+                    <span id="role-badge" class="text-xs px-2 py-0.5 rounded bg-blue-900 text-blue-200 font-bold uppercase">...</span>
+                </div>
 
-   
+                <button onclick="logout()" class="text-sm text-slate-400 hover:text-red-400 transition-colors">
+                    <i class="fa-solid fa-power-off"></i> Logout
+                </button>
+            </div>
+        </div>
+    </div>
+</nav>
 
-    <script>
-        const canvas = document.getElementById('star-canvas');
-        const ctx = canvas.getContext('2d');
+<!-- MAIN PAGE -->
+<section class="pt-24 pb-12 px-4 relative min-h-screen">
 
-        let stars = [];
-        let mouse = { x: 0, y: 0 };
+    <div class="max-w-6xl mx-auto">
 
-        function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            initStars();
-        }
+        <h1 class="text-3xl md:text-4xl font-bold mb-2 text-center">Interactive Kernel Interface</h1>
+        <p class="text-center text-slate-400 mb-8">Execute system calls and analyze real-time AI security responses.</p>
 
-        function initStars() {
-            stars = [];
-            let numStars = 150;
+        <div class="grid md:grid-cols-2 gap-0 border border-slate-700 rounded-2xl overflow-hidden glass-panel shadow-2xl mb-8">
 
-            for (let i = 0; i < numStars; i++) {
-                stars.push({
-                    x: Math.random() * canvas.width,
-                    y: Math.random() * canvas.height,
-                    vx: (Math.random() - 0.5) * 0.5,
-                    vy: (Math.random() - 0.5) * 0.5,
-                    size: Math.random() * 2 + 0.5,
-                    brightness: Math.random(),
-                    twinkleSpeed: Math.random() * 0.02 + 0.01,
-                    layer: Math.floor(Math.random() * 3)
-                });
-            }
-        }
+            <!-- LEFT TERMINAL -->
+            <div class="bg-[#0f1117] p-4 font-mono text-sm h-[500px] overflow-y-auto flex flex-col relative border-r border-slate-700/50">
 
-        function updateStars() {
-            stars.forEach(star => {
-                const dx = mouse.x - star.x;
-                const dy = mouse.y - star.y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-                const influence = Math.max(0, 1 - distance / 200);
+                <div class="absolute top-2 right-2 text-xs text-slate-600 font-bold uppercase tracking-widest">
+                    Ring 3 → Ring 0
+                </div>
 
-                const layerSpeed = [0.3, 0.6, 1][star.layer];
-                const speed = 1;
+                <div class="flex gap-2 mb-4 border-b border-white/5 pb-2 opacity-50">
+                    <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                    <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                    <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                </div>
 
-                star.x += star.vx * speed * layerSpeed + dx * influence * 0.01 * layerSpeed;
-                star.y += star.vy * speed * layerSpeed + dy * influence * 0.01 * layerSpeed;
+                <!-- ⭐ IMPORTANT TERMINAL OUTPUT BOX -->
+                <div id="terminal-output" class="flex-grow text-gray-300 space-y-1 font-mono leading-relaxed">
+                    <div class="text-green-500">✔ Kernel connection established.</div>
+                    <div class="text-slate-500">Loading security policies… OK</div>
+                    <div class="text-blue-400 mb-4">Waiting for system call interrupt…</div>
+                </div>
 
-                if (star.x < 0) star.x = canvas.width;
-                if (star.x > canvas.width) star.x = 0;
-                if (star.y < 0) star.y = canvas.height;
-                if (star.y > canvas.height) star.y = 0;
+                <div class="mt-2 flex items-center">
+                    <span class="text-green-400 mr-2 font-bold">$</span>
+                </div>
+            </div>
 
-                star.brightness += star.twinkleSpeed;
-                if (star.brightness > 1 || star.brightness < 0.3) {
-                    star.twinkleSpeed = -star.twinkleSpeed;
-                }
-            });
-        }
+            <!-- RIGHT - SYSCALL PANEL -->
+            <div class="bg-slate-800/50 p-6 flex flex-col h-[500px] overflow-y-auto backdrop-blur-sm">
 
-        function drawStars() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+                <h3 class="text-white font-bold mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-code text-blue-500"></i> Available System Calls
+                </h3>
 
-            stars.forEach(star => {
-                ctx.save();
-                ctx.globalAlpha = star.brightness;
-                ctx.fillStyle = "#fff";
-                ctx.beginPath();
-                ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.restore();
-            });
-        }
+                <div class="grid grid-cols-1 gap-3 mb-6">
 
-        function animate() {
-            updateStars();
-            drawStars();
-            requestAnimationFrame(animate);
-        }
+                    <div class="text-[10px] text-slate-500 uppercase font-bold tracking-wider mt-1">File Management</div>
 
-        window.addEventListener("resize", resizeCanvas);
-        window.addEventListener("mousemove", (e) => {
-            mouse.x = e.clientX;
-            mouse.y = e.clientY;
-        });
+                    <button onclick="triggerSyscall('open')" class="group px-4 py-3 bg-slate-700/50 hover:bg-blue-600/20 border border-slate-600 hover:border-blue-500 rounded-lg transition-all flex items-center justify-between">
+                        <span class="font-mono font-bold text-blue-400">open()</span>
+                        <span class="text-xs text-slate-400 group-hover:text-blue-200">Open file</span>
+                    </button>
 
-        resizeCanvas();
-        animate();
-    </script>
+                    <button onclick="triggerSyscall('read')" class="group px-4 py-3 bg-slate-700/50 hover:bg-purple-600/20 border border-slate-600 hover:border-purple-500 rounded-lg transition-all flex items-center justify-between">
+                        <span class="font-mono font-bold text-purple-400">read()</span>
+                        <span class="text-xs text-slate-400 group-hover:text-purple-200">Read buffer</span>
+                    </button>
 
-   
-  </body>
+                    <button onclick="triggerSyscall('write')" class="group px-4 py-3 bg-slate-700/50 hover:bg-green-600/20 border border-slate-600 hover:border-green-500 rounded-lg transition-all flex items-center justify-between">
+                        <span class="font-mono font-bold text-green-400">write()</span>
+                        <span class="text-xs text-slate-400 group-hover:text-green-200">Write to disk</span>
+                    </button>
+
+                    <div class="text-[10px] text-slate-500 uppercase font-bold tracking-wider mt-2">Directories</div>
+
+                    <button onclick="triggerSyscall('mkdir')" class="group px-4 py-3 bg-slate-700/50 hover:bg-cyan-600/20 border border-slate-600 hover:border-cyan-500 rounded-lg transition-all flex items-center justify-between">
+                        <span class="font-mono font-bold text-cyan-400">mkdir()</span>
+                        <span class="text-xs text-slate-400 group-hover:text-cyan-200">Create folder</span>
+                    </button>
+
+                    <button onclick="triggerSyscall('rmdir')" class="group px-4 py-3 bg-slate-700/50 hover:bg-red-600/20 border border-slate-600 hover:border-red-500 rounded-lg transition-all flex items-center justify-between">
+                        <span class="font-mono font-bold text-red-400">rmdir()</span>
+                        <span class="text-xs text-slate-400 group-hover:text-red-200">Remove folder</span>
+                    </button>
+
+                    <div class="text-[10px] text-slate-500 uppercase font-bold tracking-wider mt-2">Privileged</div>
+
+                    <button onclick="triggerSyscall('chown')" class="group px-4 py-3 bg-slate-700/50 hover:bg-yellow-600/20 border border-slate-600 hover:border-yellow-500 rounded-lg transition-all flex items-center justify-between">
+                        <span class="font-mono font-bold text-yellow-400">chown()</span>
+                        <span class="text-xs text-slate-400 group-hover:text-yellow-200">Change owner</span>
+                    </button>
+                </div>
+
+                <div id="syscall-result" class="hidden mt-auto p-4 rounded-lg bg-black/40 border border-slate-600"></div>
+
+            </div>
+        </div>
+
+        <!-- KERNEL LOGS -->
+        <div class="glass-panel p-6 rounded-xl border border-slate-700/60">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-bold flex items-center gap-3">
+                    <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    Kernel Syslog
+                </h3>
+
+                <div class="flex gap-2">
+                    <button onclick="refreshLogs()" class="text-xs bg-slate-700 hover:bg-slate-600 text-white px-3 py-1 rounded transition-colors">
+                        <i class="fa-solid fa-rotate-right"></i> Refresh
+                    </button>
+
+                    <button onclick="clearLogs()" class="text-xs bg-red-900/30 hover:bg-red-900/50 text-red-300 border border-red-800 px-3 py-1 rounded transition-colors">
+                        <i class="fa-solid fa-trash"></i> Clear
+                    </button>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto max-h-64 overflow-y-auto">
+                <table class="w-full text-sm text-left text-slate-400 font-mono">
+                    <thead class="text-xs text-slate-500 uppercase bg-slate-800/50 sticky top-0 backdrop-blur-md">
+                        <tr>
+                            <th class="px-4 py-3">Time</th>
+                            <th class="px-4 py-3">User</th>
+                            <th class="px-4 py-3">Role</th>
+                            <th class="px-4 py-3">Syscall</th>
+                            <th class="px-4 py-3">Status</th>
+                            <th class="px-4 py-3">Risk</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="kernel-log-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script src="app.js"></script>
+
+</body>
 </html>

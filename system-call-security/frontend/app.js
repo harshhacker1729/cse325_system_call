@@ -1,305 +1,216 @@
 const API_BASE = "http://localhost:5001/api";
 
-// ---- Storage helpers ----
-function saveUser(user) {
-  localStorage.setItem("scs_user", JSON.stringify(user));
-}
-
+// ==========================================
+// 1. AUTH & STORAGE
+// ==========================================
 function getUser() {
-  const raw = localStorage.getItem("scs_user");
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
+    try { return JSON.parse(localStorage.getItem("scs_user")); } catch { return null; }
 }
 
-function clearUser() {
-  localStorage.removeItem("scs_user");
+function saveUser(user) {
+    localStorage.setItem("scs_user", JSON.stringify(user));
 }
 
-// ---- Fun Simulation Messages ----
-const simulationMessages = {
-  fork: "🍴 <b>Process Forked!</b><br>Parent PID: 1024 -> Child PID: 4592 created.<br>Memory pages duplicated.",
-  exec: "🚀 <b>Executing Binary...</b><br>Loading <code>/bin/custom_script</code> into memory.<br>Replaced process image.",
-  wait: "⏳ <b>Waiting...</b><br>Parent process paused.<br>Received signal SIGCHLD from child process.",
-  exit: "🚪 <b>Process Terminated</b><br>Process 4592 exited with status code 0.<br>Resources freed.",
-  read: "📖 <b>Reading Data</b><br>Read 4096 bytes from file descriptor [3].<br>Buffer populated.",
-  write: "✍️ <b>Writing Data</b><br>Flushed buffer to disk.<br>128 bytes written to <code>/var/log/sys.log</code>.",
-  open: "📂 <b>Opening File</b><br>File <code>secret_data.txt</code> opened.<br>Assigned File Descriptor [3].",
-  close: "🚫 <b>Closing File</b><br>File Descriptor [3] released.<br>File handle detached.",
-  stat: "📊 <b>File Status</b><br>Inode: 83721<br>Size: 2KB<br>Permissions: -rw-r--r--"
+// Global Logout Function (Matches HTML onclick="logout()")
+window.logout = function() {
+    localStorage.removeItem("scs_user");
+    window.location.href = "login.html";
 };
 
-// ---- Login page logic ----
-async function handleLoginSubmit(event) {
-  event.preventDefault();
+// ==========================================
+// 2. TERMINAL OUTPUT LOGIC
+// ==========================================
+const terminalOutput = document.getElementById("terminal-output");
 
-  const username = document.getElementById("username").value.trim();
-  const password = document.getElementById("password").value.trim();
-  const msg = document.getElementById("login-message");
-  msg.textContent = "Logging in...";
+const terminalMessages = {
+    fork:  `clone(child_stack=0, flags=CLONE_CHILD_CLEARTID|...)\n[KERNEL] Process created. PID: $PID\n[INFO] Memory pages COW (Copy-On-Write) initialized.`,
+    exec:  `execve("/bin/custom_script", ["script"], 0x7ff...)\n[KERNEL] Replaced process image.\n[INFO] Entry point moved to 0x400080. Loading ELF headers...`,
+    wait:  `wait4(-1, NULL, 0, NULL)\n[KERNEL] Parent process paused. Waiting for SIGCHLD signal...\n[INFO] Context switch: CPU yielded.`,
+    exit:  `exit_group(0)\n[KERNEL] Process detached. Closing file descriptors.\n[INFO] PCB (Process Control Block) removed from scheduler.`,
+    read:  `read(3, buffer, 4096)\n[KERNEL] VFS: accessing inode 84721...\n[SUCCESS] Copied 4096 bytes from kernel space to user buffer.`,
+    write: `write(1, "data", 128)\n[KERNEL] I/O Scheduler: merging write request.\n[SUCCESS] Flushed dirty pages to /dev/sda1 (sector 50293).`,
+    open:  `openat(AT_FDCWD, "secret_data.txt", O_RDONLY)\n[KERNEL] Checking permissions... OK.\n[SUCCESS] File descriptor 3 assigned to inode 33201.`,
+    close: `close(3)\n[KERNEL] Releasing file descriptor 3...\n[SUCCESS] Reference count decremented. Resource freed.`,
+    stat:  `stat("/etc/passwd", {st_mode=S_IFREG|0644, st_size=2048})\n[KERNEL] Reading directory entry cache...\n[SUCCESS] Metadata retrieved.`,
+    mkdir: `mkdir("/home/user/new_folder", 0755)\n[KERNEL] VFS: Allocating new dentry.\n[SUCCESS] Directory node created.`,
+    rmdir: `rmdir("/tmp/junk_folder")\n[KERNEL] Unlinking directory inode...\n[SUCCESS] Directory removed. Blocks marked as free.`,
+    chown: `chown("/var/www/html", 1000, 1000)\n[KERNEL] Updating inode owner/group bits...\n[SUCCESS] File ownership changed to UID:1000 GID:1000.`
+};
 
-  try {
-    const res = await fetch(`${API_BASE}/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password })
-    });
-
-    if (!res.ok) {
-      msg.textContent = "Invalid username or password.";
-      return;
-    }
-
-    const data = await res.json();
-    if (data.success) {
-      saveUser({ username: data.username, role: data.role });
-      msg.textContent = "Login successful. Redirecting...";
-      setTimeout(() => {
-        window.location.href = "dashboard.html";
-      }, 800);
-    } else {
-      msg.textContent = data.message || "Login failed.";
-    }
-  } catch (err) {
-    console.error(err);
-    msg.textContent = "Error connecting to server.";
-  }
+function printToTerminal(html) {
+    if (!terminalOutput) return;
+    const div = document.createElement("div");
+    div.className = "mb-1 border-l-2 pl-2 border-transparent hover:border-slate-600 transition-colors";
+    div.innerHTML = html;
+    terminalOutput.appendChild(div);
+    terminalOutput.scrollTop = terminalOutput.scrollHeight;
 }
 
-// ---- Dashboard logic ----
-async function submitSyscall(event) {
-  event.preventDefault();
-  const user = getUser();
-  if (!user) {
-    alert("Please login again.");
-    window.location.href = "login.html";
-    return;
-  }
+// ==========================================
+// 3. CORE FUNCTIONS (MATCHING HTML ONCLICK)
+// ==========================================
 
-  const select = document.getElementById("syscall-select");
-  const syscall = select.value;
-  if (!syscall) return;
-
-  const resultDiv = document.getElementById("syscall-result");
-  const simBox = document.getElementById("simulation-box");
-  const simOut = document.getElementById("simulation-output");
-  const aiCard = document.getElementById("ai-card"); // NEW
-
-  // 1. Show "Processing" state immediately
-  resultDiv.style.display = 'block';
-  simBox.style.display = 'none';
-  aiCard.style.display = 'none';
-  
-  resultDiv.innerHTML = `
-    <div style="text-align:center; padding: 20px;">
-      <i class="fas fa-microchip fa-spin" style="font-size: 2rem; color: var(--primary);"></i>
-      <p class="text-muted mt-3">AI Neural Engine is analyzing <b>${syscall}()</b> request...</p>
-    </div>
-  `;
-
-  // 2. Add the 3-second delay (HOLD)
-  await new Promise(resolve => setTimeout(resolve, 3000));
-
-  try {
-    const res = await fetch(`${API_BASE}/syscall`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        username: user.username,
-        role: user.role,
-        syscall
-      })
-    });
-
-    const data = await res.json();
-    
-    // Check if error
-    if (!data.success) {
-      resultDiv.innerHTML = `<p class="text-muted">${data.message}</p>`;
-      return;
-    }
-
-    const badgeClass =
-      data.status === "allowed"
-        ? "badge allowed"
-        : data.status === "blocked"
-        ? "badge blocked"
-        : "badge warning";
-
-    const icon =
-      data.status === "allowed"
-        ? "✅"
-        : data.status === "blocked"
-        ? "⛔"
-        : "⚠️";
-
-    // 3. Show Final Result
-    resultDiv.innerHTML = `
-      <div class="mt-3">
-        <div class="${badgeClass}">
-          <span class="icon">${icon}</span>
-          <span>${data.status.toUpperCase()}</span>
-        </div>
-        <p class="text-muted mb-2">Policy Check: <b>${data.reason}</b></p>
-        <p class="text-muted" style="font-size:0.8rem">Timestamp: ${new Date(data.timestamp).toLocaleString()}</p>
-      </div>
-    `;
-
-    // 4. Update AI Card (NEW)
-    if (data.aiResult) {
-        aiCard.style.display = 'block';
-        const risk = data.aiResult.riskScore;
-        const bar = document.getElementById("ai-risk-bar");
-        const badge = document.getElementById("ai-risk-badge");
-        const text = document.getElementById("ai-analysis-text");
-
-        // Color logic for risk bar
-        let color = "#22c55e"; // Green
-        let riskLabel = "LOW RISK";
-        if(risk > 40) { color = "#fbbf24"; riskLabel = "MODERATE RISK"; } // Yellow
-        if(risk > 75) { color = "#ef4444"; riskLabel = "HIGH RISK"; } // Red
-
-        badge.textContent = `${riskLabel} (${risk}%)`;
-        badge.className = risk > 75 ? "badge blocked" : (risk > 40 ? "badge warning" : "badge allowed");
-        
-        // Animate Bar
-        setTimeout(() => {
-            bar.style.width = `${risk}%`;
-            bar.style.backgroundColor = color;
-        }, 100);
-
-        // Typewriter effect for text
-        text.innerHTML = `<b>AI Analysis:</b> ${data.aiResult.details}`;
-    }
-
-    // 5. Show Simulation Message if Allowed
-    if (data.status === "allowed") {
-        simBox.style.display = 'block';
-        const simMsg = simulationMessages[syscall] || "Operation executed successfully.";
-        simOut.innerHTML = simMsg;
-    }
-
-    // 6. Update Logs
-    await loadLogs();
-
-  } catch (err) {
-    console.error(err);
-    resultDiv.innerHTML = `<p class="text-muted">Error connecting to server.</p>`;
-  }
-}
-
-async function loadLogs() {
-  const tbody = document.getElementById("logs-body");
-  if (!tbody) return;
-
-  try {
-    const res = await fetch(`${API_BASE}/logs`);
-    const logs = await res.json();
-
-    if (!Array.isArray(logs) || logs.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="6" class="text-center">No logs recorded yet.</td></tr>`;
-      return;
-    }
-
-    // Clear current rows only when we have the new data ready
-    tbody.innerHTML = "";
-    
-    logs
-      .slice()
-      .reverse()
-      .forEach(entry => {
-        const tr = document.createElement("tr");
-        
-        if(entry.status === 'blocked') {
-            tr.style.backgroundColor = "rgba(254, 226, 226, 0.1)"; // Very subtle red tint
-        }
-
-        const dateObj = new Date(entry.timestamp);
-        const timeStr = dateObj.toLocaleString(); 
-        
-        // Show risk score in logs if available
-        let riskDisplay = "-";
-        if(entry.aiResult && entry.aiResult.riskScore) {
-            const r = entry.aiResult.riskScore;
-            let color = "green";
-            if(r > 40) color = "orange";
-            if(r > 75) color = "red";
-            riskDisplay = `<span style="color:${color}; font-weight:bold;">${r}%</span>`;
-        }
-
-        tr.innerHTML = `
-          <td style="font-size:0.8rem; white-space:nowrap;">${timeStr}</td>
-          <td><b>${entry.username}</b></td>
-          <td><span class="badge" style="font-size:0.7rem; padding: 2px 8px; background: rgba(0,0,0,0.05); color: #94a3b8;">${entry.role}</span></td>
-          <td style="font-family: var(--font-mono); color: var(--primary);">${entry.syscall}()</td>
-          <td>
-            <span class="badge ${entry.status === 'allowed' ? 'allowed' : 'blocked'}">
-              ${entry.status}
-            </span>
-          </td>
-          <td class="text-muted" style="font-size:0.85rem">${riskDisplay}</td>
-        `;
-        tbody.appendChild(tr);
-      });
-  } catch (err) {
-    console.error(err);
-    if(tbody.innerHTML === "") {
-        tbody.innerHTML = `<tr><td colspan="6">Failed to load logs.</td></tr>`;
-    }
-  }
-}
-
-// ---- Init per page ----
-document.addEventListener("DOMContentLoaded", () => {
-  const loginForm = document.getElementById("login-form");
-  if (loginForm) {
-    loginForm.addEventListener("submit", handleLoginSubmit);
-  }
-
-  const syscallForm = document.getElementById("syscall-form");
-  if (syscallForm) {
+// 1. Matches onclick="triggerSyscall('name')"
+window.triggerSyscall = async function(syscallType) {
     const user = getUser();
-    if (!user) {
-      alert("You must login first.");
-      window.location.href = "login.html";
-      return;
+    if (!user) return window.logout();
+
+    // Visual Feedback in Terminal
+    printToTerminal(`<span class="text-blue-400">$ ${syscallType}()</span> <span class="text-slate-500 text-xs">...processing</span>`);
+
+    try {
+        // Call Backend
+        const res = await fetch(`${API_BASE}/syscall`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                username: user.username,
+                role: user.role,
+                syscall: syscallType
+            })
+        });
+
+        const data = await res.json();
+        const pid = Math.floor(Math.random() * 20000) + 1000;
+        let msg = terminalMessages[syscallType] || `[KERNEL] Executing ${syscallType}...`;
+        msg = msg.replace('$PID', pid);
+
+        // Render Result
+        if (data.status === 'blocked') {
+            printToTerminal(`
+                <div class="text-red-400 font-bold">[BLOCKED] Permission Denied</div>
+                <div class="text-slate-500 text-xs">${data.reason}</div>
+                <div class="text-red-500 text-xs mt-1">AI Risk Score: ${data.aiResult.riskScore}%</div>
+            `);
+        } else {
+            printToTerminal(`
+                <div class="text-green-400 font-bold">[SUCCESS] Allowed</div>
+                <div class="text-slate-300 text-xs whitespace-pre-wrap">${msg}</div>
+                <div class="text-slate-500 text-xs mt-1">AI Risk Score: ${data.aiResult.riskScore}%</div>
+            `);
+        }
+
+        // Auto-refresh the log table
+        window.refreshLogs();
+
+    } catch (err) {
+        console.error(err);
+        printToTerminal(`<span class="text-red-500">Error: Server unreachable</span>`);
+    }
+};
+
+// 2. Matches onclick="refreshLogs()"
+window.refreshLogs = async function() {
+    const tbody = document.getElementById("kernel-log-body");
+    if (!tbody) return;
+
+    try {
+        const res = await fetch(`${API_BASE}/logs`);
+        const logs = await res.json();
+        tbody.innerHTML = "";
+
+        if (!logs.length) {
+            tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-slate-600">No logs found.</td></tr>`;
+            return;
+        }
+
+        logs.slice().reverse().forEach(entry => {
+            const tr = document.createElement("tr");
+            tr.className = "hover:bg-slate-700/30 transition-colors border-b border-slate-700/50";
+            
+            const time = new Date(entry.timestamp).toLocaleTimeString();
+            const statusColor = entry.status === 'blocked' ? 'text-red-400' : 'text-green-400';
+            const risk = entry.aiResult ? entry.aiResult.riskScore : 0;
+            const riskColor = risk > 75 ? 'text-red-500 font-bold' : (risk > 40 ? 'text-yellow-500' : 'text-green-500');
+
+            tr.innerHTML = `
+                <td class="px-4 py-2 text-slate-500 text-xs">${time}</td>
+                <td class="px-4 py-2 text-blue-300 font-bold">${entry.username}</td>
+                <td class="px-4 py-2 text-slate-400 text-xs uppercase">${entry.role}</td>
+                <td class="px-4 py-2 font-mono text-purple-400">${entry.syscall}()</td>
+                <td class="px-4 py-2 ${statusColor} font-bold text-xs uppercase">${entry.status}</td>
+                <td class="px-4 py-2 ${riskColor}">${risk}%</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    } catch (e) { console.error("Log error", e); }
+};
+
+// 3. Matches onclick="clearLogs()"
+window.clearLogs = async function() {
+    const user = getUser();
+    if (!user || user.role !== 'admin') {
+        alert("Access Denied: Only Admins can clear logs.");
+        return;
     }
 
-    const userSpan = document.getElementById("current-user");
-    userSpan.innerHTML = `Logged in as <b>${user.username}</b> <span class="badge" style="background:rgba(255,255,255,0.3); color:#333;">${user.role}</span>`;
+    if (!confirm("Clear all kernel audit logs?")) return;
 
-    document
-      .getElementById("logout-link")
-      .addEventListener("click", e => {
-        e.preventDefault();
-        clearUser();
-        window.location.href = "login.html";
-      });
+    try {
+        await fetch(`${API_BASE}/logs/clear`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ role: user.role })
+        });
+        window.refreshLogs();
+        printToTerminal(`<span class="text-yellow-500">[ADMIN] System logs flushed.</span>`);
+    } catch (e) { alert("Error clearing logs"); }
+};
 
-    syscallForm.addEventListener("submit", submitSyscall);
+// ==========================================
+// 4. INITIALIZATION
+// ==========================================
+document.addEventListener("DOMContentLoaded", () => {
+    const user = getUser();
     
-    // Refresh Logic
-    document
-      .getElementById("refresh-logs")
-      .addEventListener("click", loadLogs);
+    // Login Page Logic
+    const loginForm = document.getElementById("login-form");
+    if (loginForm) {
+        if(user) window.location.href = "dashboard.html"; // Already logged in
+        
+        loginForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector("button");
+            const u = document.getElementById("username").value;
+            const p = document.getElementById("password").value;
+            
+            btn.innerText = "Authenticating...";
+            await new Promise(r => setTimeout(r, 800)); // Smooth delay
 
-    // NEW: Clear Logic
-    document
-      .getElementById("clear-logs")
-      .addEventListener("click", async () => {
-        if(confirm("Are you sure you want to clear all system logs? This cannot be undone.")) {
             try {
-                await fetch(`${API_BASE}/logs/clear`, { method: "POST" });
-                loadLogs();
-            } catch(e) {
-                alert("Failed to clear logs");
+                const res = await fetch(`${API_BASE}/login`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ username: u, password: p })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    saveUser(data);
+                    window.location.href = "dashboard.html";
+                } else {
+                    alert(data.message);
+                    btn.innerText = "Login";
+                }
+            } catch {
+                alert("Server offline");
+                btn.innerText = "Login";
             }
-        }
-      });
+        });
+        return;
+    }
 
-    loadLogs();
-  }
+    // Dashboard Logic
+    if (document.getElementById("terminal-output")) {
+        if (!user) {
+            window.location.href = "login.html";
+            return;
+        }
+        
+        // Update UI with User Info
+        document.getElementById("username-span").textContent = user.username;
+        document.getElementById("role-badge").textContent = user.role;
+        
+        // Initial Log Load
+        window.refreshLogs();
+    }
 });

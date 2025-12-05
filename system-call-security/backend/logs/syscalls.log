@@ -1,23 +1,6 @@
-{"timestamp":"2025-11-26T15:44:20.043Z","username":"user","role":"user","syscall":"read","status":"allowed","reason":"Allowed by policy"}
-{"timestamp":"2025-11-26T15:44:23.809Z","username":"user","role":"user","syscall":"open","status":"allowed","reason":"Allowed by policy"}
-{"timestamp":"2025-11-26T15:44:28.227Z","username":"user","role":"user","syscall":"unknown","status":"blocked","reason":"Unknown or potentially dangerous system call"}
-{"timestamp":"2025-11-26T15:44:41.643Z","username":"user","role":"user","syscall":"stat","status":"blocked","reason":"Role 'user' is not permitted to execute 'stat'"}
-{"timestamp":"2025-11-27T06:24:06.969Z","username":"user","role":"user","syscall":"read","status":"allowed","reason":"Allowed by policy"}
-{"timestamp":"2025-11-27T06:24:11.167Z","username":"user","role":"user","syscall":"open","status":"allowed","reason":"Allowed by policy"}
-{"timestamp":"2025-11-27T06:24:15.334Z","username":"user","role":"user","syscall":"unknown","status":"blocked","reason":"Unknown or potentially dangerous system call"}
-{"timestamp":"2025-11-27T10:46:37.385Z","username":"admin","role":"admin","syscall":"open","status":"allowed","reason":"Allowed by policy"}
-{"timestamp":"2025-11-27T10:46:42.851Z","username":"admin","role":"admin","syscall":"unknown","status":"blocked","reason":"Unknown or potentially dangerous system call"}
-{"timestamp":"2025-12-01T07:34:09.112Z","username":"user","role":"user","syscall":"open","status":"allowed","reason":"Allowed by policy"}
-{"timestamp":"2025-12-01T07:36:33.978Z","username":"user","role":"user","syscall":"read","status":"allowed","reason":"Allowed by policy"}
-{"timestamp":"2025-12-01T07:36:52.226Z","username":"user","role":"user","syscall":"close","status":"allowed","reason":"Allowed by policy"}
-{"timestamp":"2025-12-03T06:28:36.628Z","username":"user","role":"user","syscall":"read","status":"allowed","reason":"Allowed by policy"}
-{"timestamp":"2025-12-03T06:29:26.011Z","username":"user","role":"user","syscall":"write","status":"blocked","reason":"Role 'user' is not permitted to execute 'write'"}
-{"timestamp":"2025-12-04T08:23:35.195Z","username":"user","role":"user","syscall":"read","status":"allowed","reason":"Allowed by policy"}
-{"timestamp":"2025-12-04T12:21:36.677Z","username":"admin","role":"admin","syscall":"fork","status":"allowed","reason":"Allowed by policy"}
-{"timestamp":"2025-12-04T12:21:47.882Z","username":"admin","role":"admin","syscall":"exec","status":"allowed","reason":"Allowed by policy"}
-{"timestamp":"2025-12-04T12:26:51.000Z","username":"admin","role":"admin","syscall":"exec","status":"allowed","reason":"Allowed by policy"}
-{"timestamp":"2025-12-04T12:27:04.266Z","username":"admin","role":"admin","syscall":"exec","status":"allowed","reason":"Allowed by policy"}
-{"timestamp":"2025-12-04T12:27:35.648Z","username":"user","role":"user","syscall":"exec","status":"blocked","reason":"Role 'user' is not permitted to execute 'exec'"}
-{"timestamp":"2025-12-04T12:36:13.111Z","username":"admin","role":"admin","syscall":"exit","status":"allowed","reason":"Allowed by policy"}
-{"timestamp":"2025-12-04T12:37:19.846Z","username":"admin","role":"admin","syscall":"fork","status":"allowed","reason":"Allowed by policy"}
-{"timestamp":"2025-12-04T12:39:57.187Z","username":"admin","role":"admin","syscall":"exec","status":"allowed","reason":"Allowed by policy"}
+{"timestamp":"2025-12-05T10:18:01.143Z","username":"admin","role":"admin","syscall":"rmdir","status":"allowed","reason":"Allowed by policy","aiResult":{"riskScore":72,"analysis":"Heuristic scan indicates a 72% probability of anomalous intent.","details":"SAFE: Operation 'rmdir' is within normal behavioral parameters."}}
+{"timestamp":"2025-12-05T10:18:02.677Z","username":"admin","role":"admin","syscall":"mkdir","status":"allowed","reason":"Allowed by policy","aiResult":{"riskScore":17,"analysis":"Heuristic scan indicates a 17% probability of anomalous intent.","details":"SAFE: Operation 'mkdir' is within normal behavioral parameters."}}
+{"timestamp":"2025-12-05T10:18:04.726Z","username":"admin","role":"admin","syscall":"chown","status":"allowed","reason":"Allowed by policy","aiResult":{"riskScore":99,"analysis":"Access control matrix verification: ALLOWED.","details":"WARNING: Critical system modification 'chown' detected. AI is logging this event for forensic audit."}}
+{"timestamp":"2025-12-05T12:05:46.261Z","username":"user","role":"user","syscall":"chown","status":"blocked","reason":"Role 'user' denied access to 'chown'","aiResult":{"riskScore":99,"analysis":"Analyzing behavioral patterns for user role 'user'...","details":"CRITICAL: Unauthorized privilege escalation attempt. 'chown' requires Admin clearance. AI blocked execution."}}
+{"timestamp":"2025-12-05T12:05:51.394Z","username":"user","role":"user","syscall":"mkdir","status":"allowed","reason":"Allowed by policy","aiResult":{"riskScore":38,"analysis":"Cross-referencing syscall 'mkdir' against known threat signatures...","details":"SAFE: Operation 'mkdir' is within normal behavioral parameters."}}
+{"timestamp":"2025-12-05T12:05:58.893Z","username":"user","role":"user","syscall":"open","status":"allowed","reason":"Allowed by policy","aiResult":{"riskScore":40,"analysis":"Analyzing behavioral patterns for user role 'user'...","details":"SAFE: Operation 'open' is within normal behavioral parameters."}}
