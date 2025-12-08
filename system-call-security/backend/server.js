@@ -20,7 +20,7 @@ const logFile = path.join(logsDir, "syscalls.log");
 // ----- Fake users (for demo) -----
 const users = require("./users.json");
 
-// ----- 1. UPDATED: Security policy for system calls -----
+// ----- Security policy for system calls -----
 const syscallPolicies = {
   // File I/O
   read: { roles: ["admin", "user"] },
@@ -100,6 +100,72 @@ function logEvent(entry) {
   fs.appendFile(logFile, line, err => { if (err) console.error(err); });
 }
 
+// Helper to get all logs
+function getAllLogs() {
+  if (!fs.existsSync(logFile)) return [];
+  const content = fs.readFileSync(logFile, "utf8").trim();
+  if (!content) return [];
+  const lines = content.split("\n").filter(Boolean);
+  const entries = lines.map(line => { try { return JSON.parse(line); } catch { return null; } }).filter(Boolean);
+  return entries;
+}
+
+// ** NEW ENDPOINT FOR DASHBOARD STATS **
+app.get("/api/stats", (req, res) => {
+  const logs = getAllLogs();
+
+  const totalUsers = users.length;
+  const totalSyscalls = logs.length;
+
+  const stats = logs.reduce((acc, log) => {
+    acc.allowedCount += log.status === 'allowed' ? 1 : 0;
+    acc.blockedCount += log.status === 'blocked' ? 1 : 0;
+    acc.syscallCounts[log.syscall] = (acc.syscallCounts[log.syscall] || 0) + 1;
+    acc.userSyscallCounts[log.username] = (acc.userSyscallCounts[log.username] || 0) + 1;
+    
+    // For trend (simplistic hourly trend based on log entry)
+    const hour = new Date(log.timestamp).getHours();
+    acc.trend[hour] = (acc.trend[hour] || 0) + 1;
+
+    return acc;
+  }, {
+    allowedCount: 0,
+    blockedCount: 0,
+    syscallCounts: {},
+    userSyscallCounts: {},
+    trend: {}
+  });
+
+  // Find Top User
+  let topUser = { username: "N/A", count: 0, role: "N/A" };
+  for (const username in stats.userSyscallCounts) {
+    if (stats.userSyscallCounts[username] > topUser.count) {
+        const userDetails = users.find(u => u.username === username);
+        topUser = { 
+            username: username, 
+            count: stats.userSyscallCounts[username], 
+            role: userDetails ? userDetails.role : "N/A" 
+        };
+    }
+  }
+
+  // Format trend data (ensure all 24 hours are represented for consistent chart data)
+  const syscallTrendData = Array(24).fill(0).map((count, hour) => ({
+      hour: hour,
+      count: stats.trend[hour] || 0
+  }));
+
+  res.json({
+    totalUsers: totalUsers,
+    totalSyscalls: totalSyscalls,
+    totalAllowed: stats.allowedCount,
+    totalBlocked: stats.blockedCount,
+    topUser: topUser,
+    syscallDistribution: stats.syscallCounts,
+    syscallTrend: syscallTrendData,
+  });
+});
+
 // ----- Routes -----
 
 app.post("/api/login", (req, res) => {
@@ -121,15 +187,11 @@ app.post("/api/syscall", (req, res) => {
 });
 
 app.get("/api/logs", (req, res) => {
-  if (!fs.existsSync(logFile)) return res.json([]);
-  const content = fs.readFileSync(logFile, "utf8").trim();
-  if (!content) return res.json([]);
-  const lines = content.split("\n").filter(Boolean);
-  const entries = lines.map(line => { try { return JSON.parse(line); } catch { return null; } }).filter(Boolean);
+  const entries = getAllLogs();
   return res.json(entries);
 });
 
-// ----- 2. UPDATED: Restricted Clear Route -----
+// ----- Restricted Clear Route -----
 app.post("/api/logs/clear", (req, res) => {
   const { role } = req.body; // Expect role in body
   

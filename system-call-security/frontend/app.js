@@ -47,7 +47,125 @@ function printToTerminal(html) {
 }
 
 // ==========================================
-// 3. CORE FUNCTIONS (MATCHING HTML ONCLICK)
+// 3. DASHBOARD STATS & CHARTING LOGIC (NEW)
+// ==========================================
+
+let syscallTrendChart = null;
+let syscallTypeChart = null;
+
+async function fetchAndRenderDashboardStats() {
+    try {
+        const res = await fetch(`${API_BASE}/stats`);
+        const stats = await res.json();
+        
+        // 1. Update KPI Cards
+        document.getElementById("kpi-total-users").textContent = stats.totalUsers;
+        document.getElementById("kpi-total-syscalls").textContent = stats.totalSyscalls;
+        document.getElementById("kpi-total-allowed").textContent = stats.totalAllowed;
+        document.getElementById("kpi-total-blocked").textContent = stats.totalBlocked;
+
+        // 2. Update Top User Panel
+        document.getElementById("top-user-username").textContent = stats.topUser.username;
+        document.getElementById("top-user-role").textContent = `Role: ${stats.topUser.role}`;
+        document.getElementById("top-user-count").textContent = stats.topUser.count;
+
+        // 3. Render Syscall Trend Chart (Line Chart)
+        const trendData = stats.syscallTrend.map(d => d.count);
+        const trendLabels = stats.syscallTrend.map(d => `${d.hour}:00`);
+
+        if (syscallTrendChart) {
+            syscallTrendChart.data.labels = trendLabels;
+            syscallTrendChart.data.datasets[0].data = trendData;
+            syscallTrendChart.update();
+        } else {
+            const ctx = document.getElementById('syscall-trend-chart').getContext('2d');
+            syscallTrendChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: trendLabels,
+                    datasets: [{
+                        label: 'Syscalls per Hour',
+                        data: trendData,
+                        borderColor: '#3b82f6', // Blue 500
+                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        pointRadius: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                            ticks: { color: '#e2e8f0' }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#e2e8f0' }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        title: { display: false }
+                    }
+                }
+            });
+        }
+
+        // 4. Render Syscall Type Distribution Chart (Doughnut Chart)
+        const distributionLabels = Object.keys(stats.syscallDistribution);
+        const distributionData = Object.values(stats.syscallDistribution);
+        const backgroundColors = distributionLabels.map((_, i) => 
+            `hsl(${i * 45}, 70%, 50%)` // Generate distinct colors for each type
+        );
+
+        if (syscallTypeChart) {
+            syscallTypeChart.data.labels = distributionLabels;
+            syscallTypeChart.data.datasets[0].data = distributionData;
+            syscallTypeChart.data.datasets[0].backgroundColor = backgroundColors;
+            syscallTypeChart.update();
+        } else {
+            const ctx = document.getElementById('syscall-type-chart').getContext('2d');
+            syscallTypeChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: distributionLabels,
+                    datasets: [{
+                        data: distributionData,
+                        backgroundColor: backgroundColors,
+                        hoverOffset: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { 
+                            position: 'bottom',
+                            labels: { color: '#e2e8f0' }
+                        },
+                        title: { display: false }
+                    }
+                }
+            });
+        }
+
+    } catch (e) {
+        console.error("Failed to fetch or render dashboard stats:", e);
+        // Fallback for KPIs if API fails
+        document.getElementById("kpi-total-users").textContent = "ERR";
+        document.getElementById("kpi-total-syscalls").textContent = "ERR";
+        document.getElementById("kpi-total-allowed").textContent = "ERR";
+        document.getElementById("kpi-total-blocked").textContent = "ERR";
+    }
+}
+
+
+// ==========================================
+// 4. CORE FUNCTIONS (MATCHING HTML ONCLICK)
 // ==========================================
 
 // 1. Matches onclick="triggerSyscall('name')"
@@ -90,8 +208,9 @@ window.triggerSyscall = async function(syscallType) {
             `);
         }
 
-        // Auto-refresh the log table
+        // Auto-refresh the log table and stats
         window.refreshLogs();
+        fetchAndRenderDashboardStats(); // Refresh stats after new syscall
 
     } catch (err) {
         console.error(err);
@@ -153,12 +272,13 @@ window.clearLogs = async function() {
             body: JSON.stringify({ role: user.role })
         });
         window.refreshLogs();
+        fetchAndRenderDashboardStats(); // Refresh stats after clearing logs
         printToTerminal(`<span class="text-yellow-500">[ADMIN] System logs flushed.</span>`);
     } catch (e) { alert("Error clearing logs"); }
 };
 
 // ==========================================
-// 4. INITIALIZATION
+// 5. INITIALIZATION
 // ==========================================
 document.addEventListener("DOMContentLoaded", () => {
     const user = getUser();
@@ -210,7 +330,8 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("username-span").textContent = user.username;
         document.getElementById("role-badge").textContent = user.role;
         
-        // Initial Log Load
+        // Initial Data Load
         window.refreshLogs();
+        fetchAndRenderDashboardStats(); // Initial dashboard stats load
     }
 });
